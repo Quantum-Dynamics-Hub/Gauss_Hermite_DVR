@@ -154,7 +154,7 @@ np.savetxt(OutputX, xpts*xscale) # in au
 OutputX.close
 print "Complete"
 
-# 2. Form the kinetic energy matrix directly in pseudo-spectral basis
+# Step 2. Form the kinetic energy matrix directly in pseudo-spectral basis
 
 print "Forming kinetic matrix in the DVR"
 
@@ -174,11 +174,11 @@ print "Complete"
 # unit conversion for the second derivative in the kinetic energy
 kineticDVR = kineticDVR*xscale**-2
 
-# 4. Form full Hamiltonian Matrix
+# Step 3. Form full Hamiltonian Matrix
 
 hamiltonianDVR = potentialDVR + kineticDVR
 
-# 5. Diagonalize Hamiltonain Matrix
+# Step 4. Diagonalize Hamiltonain Matrix
 
 print "Diagonalizing Hamiltonian in the DVR"
 
@@ -187,8 +187,7 @@ idx = evals.argsort()
 evals = evals[idx]
 evecs = evecs[:,idx]
 
-# Step 6.  Print out the results (eigenvalues and eigenfunctions)
-
+# Step 5.  Print out the results (eigenvalues and eigenfunctions)
 
 OutputEvals = open(str(str(outfile) +"_evals.txt"),"w")
 np.savetxt(OutputEvals, evals)
@@ -196,8 +195,8 @@ OutputEvals.close
 print "Complete"
 
 output4.write("Transform to pseudo-spectral basis   " + strftime("%Y-%m-%d %H:%M:%S") + '\n')
-# Evaluate the  DVR basis functions on the regular spaced grid.  This requires a transformation to the spectral representation, since otherwise we only know the value of these functions at the grid points, which isn't compatable with printing on an equally spaced grid.
-# This is ironically the most expensive part of the program, so in future, we may want to just print out the eigenfunctions at un-equally spaced points to avoid this step.
+# Evaluate the eigenfunctions  on the regular spaced grid.  This requires a transformation to the spectral representation, since otherwise we only know the value of these functions at the DVR grid points, which isn't compatable with printing on an equally spaced grid.
+# This is ironically the most expensive part of the program, so in future, we may want to just print out the eigenfunctions at un-equally spaced points and avoid this step.
 thetarray = np.zeros((npts,n))
 for i in range(n):
   print i,"/",n, "progress in building transformation matrix from DVR to spectral basis"

@@ -1,4 +1,5 @@
-#!/usr/lusers/dblinger/python/Python-2.7.11/python
+#!/usr/bin/python
+##!/usr/lusers/dblinger/python/Python-2.7.11/python
 
 ############################
 # Code by:Erica Chong and Winston Wright
@@ -25,17 +26,15 @@ from scipy.integrate import simps
 from scipy.special import h_roots
 from time import strftime
 
-
-
+xscale = 1.0
 print strftime("%Y-%m-%d %H:%M:%S")
-n = 500  # sets both number of grid points for the DVR (i.e. the highest order hermite polynomial in the spectral basis) 
-npts = 200 # sets the resolution for the printing of eigenfunctions and potential to file
+n = 100  # sets both number of grid points for the DVR (i.e. the highest order hermite polynomial in the spectral basis) 
+npts = 250 # sets the resolution for the printing of eigenfunctions and potential to file
 mass = 1.0      # electron mass in au
 hBar = 1.0 	# au 
 PIM4 = math.pow(math.pi,(-1/4))
 mp.dps = 12 # Sets the (decimal) precision for the mp floats (set this smallest that prevents overflows/div by zero in Herms and Hermsatroot builds) 
-xscale = 5.0 # factor to scale the coordinates (in AU) by.  Useful if using small n to cover a large system
-
+xscale = 5.0 # factor to scale the coordinates (in AU) by.  Useful if using small n to cover a large system, and very high grid point resolution isn't needed
 
 nele = float(sys.argv[1]) 
 nprot = float(sys.argv[2])
@@ -104,8 +103,8 @@ def w(x):
 print "Finding the roots of Hermite polynomials (and associated weights)"
 xVals,wVals = h_roots(n,False)
 print "Complete"
-xmax = xVals[-1] 
-xmin = xVals[0]  
+xmax = xVals[-1]*xscale
+xmin = xVals[0]*xscale 
 dx = (xmax - xmin)/(npts-1)
 print "xmin, ", xmin, " xmax, ", xmax
 print "Evaluating the polynomials @ roots and the printing grid points"
@@ -208,16 +207,16 @@ for i in range(n):
       thetarray[a,i] = thetarray[a,i] + newpart 
 
 ## numerical integration to check normalization of pseudo-spectral basis functions
-## (This fails for large n due to individual thetarrays being zero to mach prec, so test n~100, npts~500)
 #print simps(thetarray[:,1]**2,xpts)
 
 output4.write("Printing energy eigenfunctions in coordinate rep   " + strftime("%Y-%m-%d %H:%M:%S") + '\n')
 Psix = np.dot(thetarray,evecs)
+#print str(simps(Psix[:,1]**2/xscale,xpts*xscale))
 #for i in range(n):
 #  Psix[:,i]=np.add(Psix[:,i]**2,evals[i]*27.211385) # offset e-functs by e-val (in ev)
 #  Psix[:,i]=np.add(Psix[:,i],evals[i])  # offset e-funct by e-val (au)
 OutputPsi = open(str(str(outfile) +"_eigenfunct.txt"),"w")
-np.savetxt(OutputPsi, Psix)
+np.savetxt(OutputPsi, Psix/xscale)
 OutputPsi.close
 ## Print a bunch of Debug info to the output file 
 

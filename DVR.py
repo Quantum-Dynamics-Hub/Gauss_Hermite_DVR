@@ -33,8 +33,8 @@ npts = 100 # sets the resolution for the printing of eigenfunctions and potentia
 mass = 1.0      # electron mass in au
 hBar = 1.0 	# au 
 PIM4 = math.pow(math.pi,(-1/4))
-mp.dps = 12 # Sets the (decimal) precision for the mp floats (set this smallest that prevents overflows/div by zero in Herms and Hermsatroot builds) 
-xscale = 5.0 # factor to scale the coordinates (in AU) by.  Useful if using small n to cover a large system, and very high grid point resolution isn't needed
+#mp.dps = 12 # Sets the (decimal) precision for the mp floats (set this smallest that prevents overflows/div by zero in Herms and Hermsatroot builds) 
+xscale = 3.0 # factor to scale the coordinates (in AU) by.  Useful if using small n to cover a large system, and very high grid point resolution isn't needed
 
 nele = float(sys.argv[1]) 
 nprot = float(sys.argv[2])
@@ -50,7 +50,6 @@ output4.write('number electron, protons, and QD radius (Bohr), orbital angular m
 output4.write("n = " + str(n) + '\n')
 
 
-
 ### DEFINE THE POTENTIAL
 
 # Harmonic oscillator and parabolic doublewell tests
@@ -64,13 +63,12 @@ output4.write("n = " + str(n) + '\n')
 #    return 1.0/4.0*(abs(x/2.0) - 2.0)**2  
 
 
-
 def potential(x):
 # Parameters for the potential
   R = RQD #QD radius in Bohr
   x = xscale*x
-  epsOut = 7.56 # THF permitivity
-#  epsOut = 1.0 # Vacuum permitivity 
+#  epsOut = 7.56 # THF permitivity
+  epsOut = 1.0 # Vacuum permitivity 
   epsRel =  10.0 # epsilon_r for ZnO
   epsR = 1 + (epsRel-1)/(1+(1.7)/(R**1.8)) 
   if abs(x) < R:
@@ -79,8 +77,6 @@ def potential(x):
   else:
     return -(nprot-(nele-1))/(epsOut*abs(x))+(nprot-(nele-1))/(epsOut*R)+(l**2+l)/(2*x**2) 
 #    return -(nprot-(nele-1))/(epsOut*abs(x))+(nprot-(nele-1))/(epsOut*R)
-
-
 
 
 # orthonormal set of Hermite polynomials (physicistsi form) with arbitrary precision                                                                                    
@@ -92,22 +88,21 @@ def hermite(n,x=0):
   return mpf(x*math.sqrt(2/n)*hermite(n-1,x) - math.sqrt((n-1)/n)*hermite(n-2,x)) 
 
 
-
-    
 # weighting function for Hermite polynomials
 def w(x):
   return mpf(math.pow(math.e,(-x*x)))
-
 
 # Step 0. Setting up the DVR gridpoints and weights
 
 print "Finding the roots of Hermite polynomials (and associated weights)"
 xVals,wVals = h_roots(n,False)
 print "Complete"
-xmax = xVals[-1]*xscale
-xmin = xVals[0]*xscale 
+#xmax = xVals[-1]*xscale
+#xmin = xVals[0]*xscale 
+xmax = xVals[-1]
+xmin = xVals[0]
 dx = (xmax - xmin)/(npts-1)
-print "xmin, ", xmin, " xmax, ", xmax
+print "xmin, ", xmin*xscale, " xmax, ", xmax*xscale
 print "Evaluating the polynomials @ roots and the printing grid points"
 # Evaluate H0 and H1 on a grid and use forward recursion with the value of the functions at those points.  
 # This will prevent n-factorial scaling of the eigenfunction printing 
@@ -132,7 +127,6 @@ while i < n:
   i = i + 1
 print "Complete"
 
-
 # Step 1. Set up the uniformly spaced grid to evaluate the potential on for printing 
 
 print "Forming potential matrix in the DVR"
@@ -150,7 +144,7 @@ for i in range(n):
   potvec[i] = potential(xVals[i])
 potentialDVR = np.diag(potvec)
 OutputX = open(str(str(outfile) +"_xpoints.txt"),"w")
-np.savetxt(OutputX, xpts) # in au
+np.savetxt(OutputX, xpts*xscale) # in au
 OutputX.close
 print "Complete"
 
@@ -212,12 +206,12 @@ for i in range(n):
 
 output4.write("Printing energy eigenfunctions in coordinate rep   " + strftime("%Y-%m-%d %H:%M:%S") + '\n')
 Psix = np.dot(thetarray,evecs)
-print str(simps(Psix[:,1]**2,xpts))
+print str(simps(Psix[:,1]**2/xscale,xpts*xscale))
 #for i in range(n):
 #  Psix[:,i]=np.add(Psix[:,i]**2,evals[i]*27.211385) # offset e-functs by e-val (in ev)
 #  Psix[:,i]=np.add(Psix[:,i],evals[i])  # offset e-funct by e-val (au)
 OutputPsi = open(str(str(outfile) +"_eigenfunct.txt"),"w")
-np.savetxt(OutputPsi, Psix)
+np.savetxt(OutputPsi, Psix/xscale)
 OutputPsi.close
 ## Print a bunch of Debug info to the output file 
 

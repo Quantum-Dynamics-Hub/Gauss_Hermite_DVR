@@ -28,8 +28,8 @@ from time import strftime
 
 xscale = 1.0
 print strftime("%Y-%m-%d %H:%M:%S")
-n = 100  # sets both number of grid points for the DVR (i.e. the highest order hermite polynomial in the spectral basis) 
-npts = 250 # sets the resolution for the printing of eigenfunctions and potential to file
+n = 50  # sets both number of grid points for the DVR (i.e. the highest order hermite polynomial in the spectral basis) 
+npts = 100 # sets the resolution for the printing of eigenfunctions and potential to file
 mass = 1.0      # electron mass in au
 hBar = 1.0 	# au 
 PIM4 = math.pow(math.pi,(-1/4))
@@ -69,7 +69,8 @@ def potential(x):
 # Parameters for the potential
   R = RQD #QD radius in Bohr
   x = xscale*x
-  epsOut = 1.0 # vacuum permitivity
+  epsOut = 7.56 # THF permitivity
+#  epsOut = 1.0 # Vacuum permitivity 
   epsRel =  10.0 # epsilon_r for ZnO
   epsR = 1 + (epsRel-1)/(1+(1.7)/(R**1.8)) 
   if abs(x) < R:
@@ -149,7 +150,7 @@ for i in range(n):
   potvec[i] = potential(xVals[i])
 potentialDVR = np.diag(potvec)
 OutputX = open(str(str(outfile) +"_xpoints.txt"),"w")
-np.savetxt(OutputX, xpts*xscale) # in au
+np.savetxt(OutputX, xpts) # in au
 OutputX.close
 print "Complete"
 
@@ -211,12 +212,12 @@ for i in range(n):
 
 output4.write("Printing energy eigenfunctions in coordinate rep   " + strftime("%Y-%m-%d %H:%M:%S") + '\n')
 Psix = np.dot(thetarray,evecs)
-#print str(simps(Psix[:,1]**2/xscale,xpts*xscale))
+print str(simps(Psix[:,1]**2,xpts))
 #for i in range(n):
 #  Psix[:,i]=np.add(Psix[:,i]**2,evals[i]*27.211385) # offset e-functs by e-val (in ev)
 #  Psix[:,i]=np.add(Psix[:,i],evals[i])  # offset e-funct by e-val (au)
 OutputPsi = open(str(str(outfile) +"_eigenfunct.txt"),"w")
-np.savetxt(OutputPsi, Psix/xscale)
+np.savetxt(OutputPsi, Psix)
 OutputPsi.close
 ## Print a bunch of Debug info to the output file 
 

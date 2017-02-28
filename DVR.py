@@ -34,7 +34,7 @@ mass = 1.0      # electron mass in au
 hBar = 1.0 	# au 
 PIM4 = math.pow(math.pi,(-1/4))
 mp.dps = 16 # Sets the (decimal) precision for the mp floats (set this smallest that prevents overflows/div by zero in Herms and Hermsatroot builds) 
-xscale = 5.0 # factor to scale the coordinates (in AU) by.  Useful if using small n to cover a large system, and very high grid point resolution isn't needed
+xscale = 10.0 # factor to scale the coordinates (in AU) by.  Useful if using small n to cover a large system, and very high grid point resolution isn't needed
 print 'n = ' + str(n)
 nele = float(sys.argv[1]) 
 nprot = float(sys.argv[2])
@@ -162,9 +162,9 @@ evecs = evecs[:,idx]
 
 # DBL test of printing without back-transformation to the hermite polynomial basis (uneven grid points)
 
-Outputtest1 = open(str(str(outfile) +"_gridpoints.txt"),"w")
-np.savetxt(Outputtest1, xVals*xscale) # in au
-Outputtest1.close
+OutputGrid = open(str(str(outfile) +"_gridpoints.txt"),"w")
+np.savetxt(OutputGrid, xVals*xscale) # in au
+OutputGrid.close
 
 # Step 5.  Print out the results (eigenvalues and eigenfunctions)
 
@@ -177,11 +177,22 @@ for i in range(n):
   if wVals[i]>1.e-300:
     evecs[i,:] = evecs[i,:]*math.sqrt(w(xVals[i])/wVals[i])
 
-print str(simps(evecs[:,1]**2/xscale,xVals*xscale))
+print 'Integral of ground state wavefunction mod. sq.: '+str(simps(evecs[:,0]**2/xscale,xVals*xscale))
 
-Outputtest2 = open(str(str(outfile) +"_efunctions.txt"),"w")
-np.savetxt(Outputtest2, evecs/math.sqrt(xscale)) # in au
-Outputtest2.close
+OutputEfunct = open(str(str(outfile) +"_efunctions.txt"),"w")
+np.savetxt(OutputEfunct, evecs/math.sqrt(xscale)) # in au
+OutputEfunct.close
+
+# DBL print the RDF, assuming the 1D potential here is a radial component of a 3d problem
+
+rdf = np.zeros(n)
+for i in range(n):
+  rdf[i] = (evecs[i,0]*xVals[i]*xscale)**2
+rdfnorm = simps(rdf,xVals*xscale)
+OutputRDF = open(str(str(outfile) +"RDF_groundstate.txt"),"w")
+np.savetxt(OutputRDF,rdf/rdfnorm)
+OutputRDF.close 
+
 
 output4.write("Printing data  " + strftime("%Y-%m-%d %H:%M:%S") + '\n')
 output4.write("xvals" + '\n' + "   ".join(str(item) for item in xVals) + '\n')

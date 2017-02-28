@@ -26,16 +26,16 @@ from scipy.integrate import simps
 from scipy.special import h_roots
 from time import strftime
 
-xscale = 1.0
 print strftime("%Y-%m-%d %H:%M:%S")
-n = 50  # sets both number of grid points for the DVR (i.e. the highest order hermite polynomial in the spectral basis) 
-npts = 100 # sets the resolution for the printing of eigenfunctions and potential to file
+
+xscale = 1.0
+n = 500  # sets both number of grid points for the DVR (i.e. the highest order hermite polynomial in the spectral basis) 
 mass = 1.0      # electron mass in au
 hBar = 1.0 	# au 
 PIM4 = math.pow(math.pi,(-1/4))
-#mp.dps = 12 # Sets the (decimal) precision for the mp floats (set this smallest that prevents overflows/div by zero in Herms and Hermsatroot builds) 
-xscale = 3.0 # factor to scale the coordinates (in AU) by.  Useful if using small n to cover a large system, and very high grid point resolution isn't needed
-
+mp.dps = 16 # Sets the (decimal) precision for the mp floats (set this smallest that prevents overflows/div by zero in Herms and Hermsatroot builds) 
+xscale = 5.0 # factor to scale the coordinates (in AU) by.  Useful if using small n to cover a large system, and very high grid point resolution isn't needed
+print 'n = ' + str(n)
 nele = float(sys.argv[1]) 
 nprot = float(sys.argv[2])
 RQD = float(sys.argv[3])
@@ -97,25 +97,11 @@ def w(x):
 print "Finding the roots of Hermite polynomials (and associated weights)"
 xVals,wVals = h_roots(n,False)
 print "Complete"
-#xmax = xVals[-1]*xscale
-#xmin = xVals[0]*xscale 
 xmax = xVals[-1]
 xmin = xVals[0]
-dx = (xmax - xmin)/(npts-1)
 print "xmin, ", xmin*xscale, " xmax, ", xmax*xscale
-print "Evaluating the polynomials @ roots and the printing grid points"
+print "Evaluating the Hermite polynomials @ roots of the n'th order one"
 # Evaluate H0 and H1 on a grid and use forward recursion with the value of the functions at those points.  
-# This will prevent n-factorial scaling of the eigenfunction printing 
-Herms = np.zeros((npts,n))*mpf(1.0) # initialize an arbitrary precision array
-for a in range(npts):
-  Herms[a,0] = hermite(0,xmin+a*dx)
-  Herms[a,1] = hermite(1,xmin+a*dx)
-i = 2
-while i < n:
-  for a in range(npts):
-    ex = xmin + a*dx
-    Herms[a,i] = mpf(ex*math.sqrt(2/(i))*Herms[a,i-1] - math.sqrt((i-1)/i)*Herms[a,i-2]) # need arbitrary precisions here since these can get very small (not representable by double-precision floats)
-  i = i + 1
 HermsAtRoots = np.zeros((n,n))*mpf(1.0) # initialize an arbitrary precision array
 for a in range(n):
   HermsAtRoots[a,0] = hermite(0,xVals[a])
@@ -130,22 +116,15 @@ print "Complete"
 # Step 1. Set up the uniformly spaced grid to evaluate the potential on for printing 
 
 print "Forming potential matrix in the DVR"
-Vofx = np.zeros((npts))
-xpts = np.zeros((npts))
-for i in range(npts):
-  xpts[i] = xmin+i*dx
-  Vofx[i] = potential(xpts[i])
-OutputV = open(str(str(outfile) +"_potential.txt"),"w")
-np.savetxt(OutputV, Vofx) # in au
-OutputV.close
-# Step 1.5 Build the potential matrix in the pseudo-spectral (DVR) basis
+# Step 1.5 Build the potential matrix in the pseudo-spectral (DVR) basis (and print)
 potvec = np.ndarray((n))
 for i in range(n):
   potvec[i] = potential(xVals[i])
+OutputV = open(str(str(outfile) +"_potential.txt"),"w")
+np.savetxt(OutputV, potvec) # in au
+OutputV.close
+  
 potentialDVR = np.diag(potvec)
-OutputX = open(str(str(outfile) +"_xpoints.txt"),"w")
-np.savetxt(OutputX, xpts*xscale) # in au
-OutputX.close
 print "Complete"
 
 # Step 2. Form the kinetic energy matrix directly in pseudo-spectral basis
@@ -181,6 +160,12 @@ idx = evals.argsort()
 evals = evals[idx]
 evecs = evecs[:,idx]
 
+# DBL test of printing without back-transformation to the hermite polynomial basis (uneven grid points)
+
+Outputtest1 = open(str(str(outfile) +"_gridpoints.txt"),"w")
+np.savetxt(Outputtest1, xVals*xscale) # in au
+Outputtest1.close
+
 # Step 5.  Print out the results (eigenvalues and eigenfunctions)
 
 OutputEvals = open(str(str(outfile) +"_evals.txt"),"w")
@@ -188,32 +173,15 @@ np.savetxt(OutputEvals, evals)
 OutputEvals.close
 print "Complete"
 
-output4.write("Transform to pseudo-spectral basis   " + strftime("%Y-%m-%d %H:%M:%S") + '\n')
-# Evaluate the eigenfunctions  on the regular spaced grid.  This requires a transformation to the spectral representation, since otherwise we only know the value of these functions at the DVR grid points, which isn't compatable with printing on an equally spaced grid.
-# This is ironically the most expensive part of the program, so in future, we may want to just print out the eigenfunctions at un-equally spaced points and avoid this step.
-thetarray = np.zeros((npts,n))
 for i in range(n):
-  print i,"/",n, "progress in building transformation matrix from DVR to spectral basis"
-  wvali = math.sqrt(wVals[i])
-  for a in range(npts):
-    for m in range(n):
-      ex = xmin+a*dx # current position
-      newpart = math.sqrt(w(ex))*Herms[a,m]*wvali*HermsAtRoots[i,m]
-      thetarray[a,i] = thetarray[a,i] + newpart 
+  if wVals[i]>1.e-300:
+    evecs[i,:] = evecs[i,:]*math.sqrt(w(xVals[i])/wVals[i])
 
-## numerical integration to check normalization of pseudo-spectral basis functions
-#print simps(thetarray[:,1]**2,xpts)
+print str(simps(evecs[:,1]**2/xscale,xVals*xscale))
 
-output4.write("Printing energy eigenfunctions in coordinate rep   " + strftime("%Y-%m-%d %H:%M:%S") + '\n')
-Psix = np.dot(thetarray,evecs)
-print str(simps(Psix[:,1]**2/xscale,xpts*xscale))
-#for i in range(n):
-#  Psix[:,i]=np.add(Psix[:,i]**2,evals[i]*27.211385) # offset e-functs by e-val (in ev)
-#  Psix[:,i]=np.add(Psix[:,i],evals[i])  # offset e-funct by e-val (au)
-OutputPsi = open(str(str(outfile) +"_eigenfunct.txt"),"w")
-np.savetxt(OutputPsi, Psix/xscale)
-OutputPsi.close
-## Print a bunch of Debug info to the output file 
+Outputtest2 = open(str(str(outfile) +"_efunctions.txt"),"w")
+np.savetxt(Outputtest2, evecs/math.sqrt(xscale)) # in au
+Outputtest2.close
 
 output4.write("Printing data  " + strftime("%Y-%m-%d %H:%M:%S") + '\n')
 output4.write("xvals" + '\n' + "   ".join(str(item) for item in xVals) + '\n')

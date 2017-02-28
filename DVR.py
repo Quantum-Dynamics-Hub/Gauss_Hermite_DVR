@@ -35,6 +35,7 @@ hBar = 1.0 	# au
 PIM4 = math.pow(math.pi,(-1/4))
 mp.dps = 16 # Sets the (decimal) precision for the mp floats (set this smallest that prevents overflows/div by zero in Herms and Hermsatroot builds) 
 xscale = 10.0 # factor to scale the coordinates (in AU) by.  Useful if using small n to cover a large system, and very high grid point resolution isn't needed
+
 print 'n = ' + str(n)
 nele = float(sys.argv[1]) 
 nprot = float(sys.argv[2])
@@ -187,9 +188,9 @@ OutputEfunct.close
 
 rdf = np.zeros(n)
 for i in range(n):
-  rdf[i] = (evecs[i,0]*xVals[i]*xscale)**2
+  rdf[i] = evecs[i,0]**2*(xVals[i]*xscale)**2
 rdfnorm = simps(rdf,xVals*xscale)
-OutputRDF = open(str(str(outfile) +"RDF_groundstate.txt"),"w")
+OutputRDF = open(str(str(outfile) +"_RDF_of_groundstate.txt"),"w")
 np.savetxt(OutputRDF,rdf/rdfnorm)
 OutputRDF.close 
 
